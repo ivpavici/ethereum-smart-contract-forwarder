@@ -1,0 +1,39 @@
+# Please refer https://aka.ms/HTTPSinContainer on how to setup an https developer certificate for your ASP .NET Core service.
+
+version: '3.4'
+
+services:
+  postgresql_database:
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=ethWalletDb
+    ports:
+      - "5432:5432"
+    restart: always
+    volumes:
+      - database-data:/var/lib/postgresql/data/
+    networks:
+      - aspnetcoreapp-network
+
+  ethereumexchangewalletapi:
+    image: ethereumexchangewalletapi
+    environment:
+      - POSTGRESSETTINGS__HOST=postgresql_database
+    build:
+      context: .
+      dockerfile: EthereumExchangeWallet.Api/Dockerfile
+    depends_on:
+     - "postgresql_database"
+    ports:
+      - 5000:5000
+    networks:
+      - aspnetcoreapp-network
+
+volumes:
+  database-data:
+
+networks:
+  aspnetcoreapp-network:
+    driver: bridge
