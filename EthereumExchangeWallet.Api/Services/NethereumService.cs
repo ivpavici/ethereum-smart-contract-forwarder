@@ -1,4 +1,5 @@
-﻿using Nethereum.ABI.Encoders;
+﻿using Microsoft.Extensions.Configuration;
+using Nethereum.ABI.Encoders;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
 using Nethereum.WalletForwarder.Contracts.Forwarder;
@@ -15,20 +16,21 @@ namespace EthereumExchangeWallet.Api.Services
 {
     public class NethereumService : INethereumService
     {
+        private readonly IConfiguration _config;
         public Web3 Web3 { get; }
 
-        public NethereumService()
+        public NethereumService(IConfiguration config)
         {
+            _config = config;
             // TODO: should be in config / secret
             var privateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
             var account = new Account(privateKey, 444444444500);
-            Web3 = new Web3(account);
+            Web3 = new Web3(account);  
         }
 
         public async Task<string> DeployDefaultEthContractForwarderAddress()
         {
-            // TODO: address of our hot wallet, this should be in config
-            var destinationAddress = "0x6C547791C3573c2093d81b919350DB1094707011";
+            var destinationAddress = _config.GetValue<string>("EthHotWalletAddress");
 
             // TODO: ubacit try catch ako ne radi blockchain veza
 
