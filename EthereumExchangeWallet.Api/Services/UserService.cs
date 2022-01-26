@@ -36,7 +36,7 @@ namespace EthereumExchangeWallet.Api.Services
             var forwaderContractAddress = await _depositAddressRepository.GetAddress(x => x.IsContractForwarderAddress);
             var factoryAddress = await _depositAddressRepository.GetAddress(x => x.IsContractFactoryAddress);
 
-            //Calculate the new contract address, but it is not yet created on the blockchain, only when user clicks the deposit button
+            // Calculate the new contract address, but it is not yet created on the blockchain, only when we detect that there is a deposit on the address
             var contractCalculatedAddress = _nethereumService.CalculateDepositAddress(userId, factoryAddress, forwaderContractAddress);
 
             DepositAddress assetDepositAddress = new()

@@ -17,7 +17,7 @@ namespace EthereumExchangeWallet.Api.Services
             _nethereumService = nethereumService;
         }
 
-        // Should be called just by admin
+        // TODO: Should be called just by admin
         public async Task<bool> TryCreateAssetSmartContractForwarderAsync(int assetId)
         {
             var asset = await _assetRepository.GetItemAsync(assetId);
