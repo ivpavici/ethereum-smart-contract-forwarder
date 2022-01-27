@@ -20,6 +20,8 @@ namespace EthereumExchangeWallet.Api.Data.Repositories
             var address = await _context.DepositAddresses
                 .FirstOrDefaultAsync(predicate);
 
+            if (address == null) return null;
+
             return address.Address;
         }
     }

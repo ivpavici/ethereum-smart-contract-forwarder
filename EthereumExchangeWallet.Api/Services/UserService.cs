@@ -27,14 +27,13 @@ namespace EthereumExchangeWallet.Api.Services
             var user = await _userRepository.GetItemAsync(userId);
             var asset = await _assetRepository.GetItemAsync(assetId);
 
-            if (user == null || asset == null)
-            {
-                return false;
-            }
+            if (user == null || asset == null) return false;
 
             // TODO: add null check
             var forwaderContractAddress = await _depositAddressRepository.GetAddress(x => x.IsContractForwarderAddress);
             var factoryAddress = await _depositAddressRepository.GetAddress(x => x.IsContractFactoryAddress);
+            
+            if (forwaderContractAddress == null || factoryAddress == null) return false;
 
             // Calculate the new contract address, but it is not yet created on the blockchain, only when we detect that there is a deposit on the address
             var contractCalculatedAddress = _nethereumService.CalculateDepositAddress(userId, factoryAddress, forwaderContractAddress);
@@ -57,6 +56,8 @@ namespace EthereumExchangeWallet.Api.Services
             var depositAddress = await _depositAddressRepository.GetAddress(x => x.User.Id == userId && x.Asset.Id == assetId);
             var forwaderContractAddress = await _depositAddressRepository.GetAddress(x => x.IsContractForwarderAddress);
             var factoryAddress = await _depositAddressRepository.GetAddress(x => x.IsContractFactoryAddress);
+
+            if (depositAddress == null || factoryAddress == null || forwaderContractAddress == null) return false;
 
             await _nethereumService.Deposit(amount, userId, depositAddress, forwaderContractAddress, factoryAddress);
 
