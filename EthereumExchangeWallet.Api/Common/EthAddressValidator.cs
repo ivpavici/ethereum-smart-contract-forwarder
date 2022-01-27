@@ -7,9 +7,7 @@ namespace EthereumExchangeWallet.Api.Common
     {
         protected override ValidationResult IsValid(object value, ValidationContext validationContext)
         {
-            var addressUtil = new AddressUtil();
-
-            if (! addressUtil.IsValidEthereumAddressHexFormat(value.ToString()))
+            if (! value.ToString().IsValidEthereumAddressHexFormat())
             {
                 return new ValidationResult("Ethereum address is not in valid format");
             }   
