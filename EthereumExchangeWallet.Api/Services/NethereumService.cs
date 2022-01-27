@@ -113,7 +113,17 @@ namespace EthereumExchangeWallet.Api.Services
             BigInteger balance;
 
             if (asset == 1) // Eth
-                balance = await Web3.Eth.GetBalance.SendRequestAsync(address);
+            {
+                try
+                {
+                    balance = await Web3.Eth.GetBalance.SendRequestAsync(address);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Cannot connect to Ethereum blockchain");
+                    throw;
+                }
+            }
             else
             {
                 // if asset is token

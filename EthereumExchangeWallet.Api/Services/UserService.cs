@@ -29,7 +29,6 @@ namespace EthereumExchangeWallet.Api.Services
 
             if (user == null || asset == null) return false;
 
-            // TODO: add null check
             var forwaderContractAddress = await _depositAddressRepository.GetAddress(x => x.IsContractForwarderAddress);
             var factoryAddress = await _depositAddressRepository.GetAddress(x => x.IsContractFactoryAddress);
             

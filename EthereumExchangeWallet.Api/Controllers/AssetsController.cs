@@ -82,17 +82,15 @@ namespace EthereumExchangeWallet.Api.Controllers
 
             if (smartContractAdress == false) return NotFound();
 
-            // TODO: change this
-            return NoContent();
+            return Ok(smartContractAdress);
         }
 
-        [HttpGet("{asset}/{address}")]
-        public async Task<ActionResult> GetAssetBalance(int asset, string address)
+        [HttpGet("{asset}/{address}/balance")]
+        public async Task<ActionResult> GetAssetBalance(int asset, [EthAddressValidator] string address)
         {
             var balance = await _assetService.GetAssetBalance(address, asset);
 
             return Ok(balance);
-            // TODO: hendlat osale caseove
         }
     }
 }

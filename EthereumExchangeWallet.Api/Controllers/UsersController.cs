@@ -82,8 +82,7 @@ namespace EthereumExchangeWallet.Api.Controllers
 
             if (result == false) return NotFound();
 
-            // TODO: change this
-            return NoContent();
+            return Ok(result);
         }
 
         [HttpPost("{id}/deposit-eth")]
@@ -93,8 +92,7 @@ namespace EthereumExchangeWallet.Api.Controllers
 
             if (result == false) return NotFound();
 
-            // TODO: change this
-            return NoContent();
+            return Ok(result);
         }
     }
 }
