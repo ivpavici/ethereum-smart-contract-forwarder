@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Nethereum.ABI.Encoders;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Signer;
 using Nethereum.Util;
 using Nethereum.WalletForwarder.Contracts.Forwarder;
 using Nethereum.WalletForwarder.Contracts.Forwarder.ContractDefinition;
@@ -26,14 +27,16 @@ namespace EthereumExchangeWallet.Api.Services
         {
             _config = config;
             _logger = logger;
-            // TODO: should be in config / secret
-            var privateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
 
+            var privateKey = _config.GetValue<string>("EthPrivateKey");
             var chainIdString = _config.GetValue<string>("ChainId");
             var chainId = BigInteger.Parse(chainIdString);
 
             var account = new Account(privateKey, chainId);
-            Web3 = new Web3(account);
+
+            var ethNetwork = _config.GetValue<string>("EthNetwork");
+
+            Web3 = new Web3(account, ethNetwork);
         }
 
         public async Task<string> DeployDefaultEthContractForwarderAddress()
