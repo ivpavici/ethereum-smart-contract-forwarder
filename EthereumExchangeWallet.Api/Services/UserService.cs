@@ -62,5 +62,18 @@ namespace EthereumExchangeWallet.Api.Services
 
             return true;
         }
+
+        public async Task<bool> TryFlushEthereumToHotWallet(int userId)
+        {
+            var address = await _depositAddressRepository.GetAddress(x => x.User.Id == userId && x.Asset.Id == 1);
+            var forwaderContractAddress = await _depositAddressRepository.GetAddress(x => x.IsContractForwarderAddress);
+            var factoryAddress = await _depositAddressRepository.GetAddress(x => x.IsContractFactoryAddress);
+
+            if (address == null || factoryAddress == null || forwaderContractAddress == null) return false;
+
+            await _nethereumService.FlushEthereum(userId, address, forwaderContractAddress, factoryAddress);
+
+            return true;
+        }
     }
 }

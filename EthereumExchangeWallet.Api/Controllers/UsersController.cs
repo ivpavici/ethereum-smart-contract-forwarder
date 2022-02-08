@@ -94,5 +94,15 @@ namespace EthereumExchangeWallet.Api.Controllers
 
             return Ok(result);
         }
+
+        [HttpPost("{id}/flush-ethereum")]
+        public async Task<ActionResult> FlushEthereum(int id)
+        {
+            var result = await _userService.TryFlushEthereumToHotWallet(id);
+
+            if (result == false) return NotFound();
+
+            return Ok(result);
+        }
     }
 }

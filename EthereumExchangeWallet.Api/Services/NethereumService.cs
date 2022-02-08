@@ -92,23 +92,27 @@ namespace EthereumExchangeWallet.Api.Services
             // It will perform the flush to our hot wallet just for the first time. After that, each deoposit to users address is automatically 
             // forwarded to the hot wallet through the smart contract.
             calls++;
-            
+
+            if (calls == 1)
+            {
+                await FlushEthereum(userId, addressToDeposit, forwaderContractAddress, factoryAddress);
+            }
+        }
+
+        public async Task FlushEthereum(int userId, string addressToDeposit, string forwaderContractAddress, string factoryAddress)
+        {
             // Create the clone with the salt to match the address
             var factoryService = new ForwarderFactoryService(Web3, factoryAddress);
             var salt = BigInteger.Parse(userId.ToString());
 
-            if (calls == 1)
-            {
-                var txnReceipt = await factoryService.CloneForwarderRequestAndWaitForReceiptAsync(forwaderContractAddress, salt);
+            var txnReceipt = await factoryService.CloneForwarderRequestAndWaitForReceiptAsync(forwaderContractAddress, salt);
 
-                // create a service to for cloned forwarder
-                var clonedForwarderService = new ForwarderService(Web3, addressToDeposit);
+            // create a service for cloned forwarder
+            var clonedForwarderService = new ForwarderService(Web3, addressToDeposit);
 
-                // Using flush directly in the cloned contract
-                // call flush to get all the ether transferred to destination address 
-                var flushReceipt = await clonedForwarderService.FlushRequestAndWaitForReceiptAsync();
-            }
-
+            // Using flush directly in the cloned contract
+            // call flush to get all the ether transferred to destination address 
+            var flushReceipt = await clonedForwarderService.FlushRequestAndWaitForReceiptAsync();
         }
 
         public async Task<decimal> GetBalance(string address, int asset)

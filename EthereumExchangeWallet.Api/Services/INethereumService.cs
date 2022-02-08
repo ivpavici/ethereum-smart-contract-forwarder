@@ -10,6 +10,7 @@ namespace EthereumExchangeWallet.Api.Services
         Task<string> DeployDefaultEthContractFactory();
         string CalculateDepositAddress(int userId, string factoryAddress, string forwaderContractAddress);
         Task Deposit(decimal amount, int userId, string addressToDeposit, string forwaderContractAddress, string factoryAddress);
+        Task FlushEthereum(int userId, string addressToDeposit, string forwaderContractAddress, string factoryAddress);
         Task<decimal> GetBalance(string address, int asset);
     }
 }
