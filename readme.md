@@ -8,6 +8,8 @@
 	- Use TDD principles while developing
 
 - prerequisites:
+	- Use Infura test chain
+	- Or locally:
 	1. Testchain: https://github.com/Nethereum/Testchains
 		- I used Geth for Windows testchain for local development, just donwload the project and run the bath script
 		- Commands to interact with the CLI  https://ethereum.stackexchange.com/questions/28703/full-list-of-geth-terminal-commands/28704
@@ -17,3 +19,4 @@
 - To run: 
  	- docker compose up -d
  	- run migrations
+ 	- in postman/insomnia reach the endpoint via (for exmample) http://localhost:5000/api/assets
