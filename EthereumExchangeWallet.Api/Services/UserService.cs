@@ -53,25 +53,22 @@ namespace EthereumExchangeWallet.Api.Services
         public async Task<bool> TryDepositToAddress(decimal amount, int userId, int assetId)
         {
             var depositAddress = await _depositAddressRepository.GetAddress(x => x.User.Id == userId && x.Asset.Id == assetId);
-            var forwaderContractAddress = await _depositAddressRepository.GetAddress(x => x.IsContractForwarderAddress);
-            var factoryAddress = await _depositAddressRepository.GetAddress(x => x.IsContractFactoryAddress);
+            if (depositAddress == null) return false;
 
-            if (depositAddress == null || factoryAddress == null || forwaderContractAddress == null) return false;
-
-            await _nethereumService.Deposit(amount, userId, depositAddress, forwaderContractAddress, factoryAddress);
+            await _nethereumService.Deposit(amount, depositAddress);
 
             return true;
         }
 
         public async Task<bool> TryFlushEthereumToHotWallet(int userId)
         {
-            var address = await _depositAddressRepository.GetAddress(x => x.User.Id == userId && x.Asset.Id == 1);
+            var depositAddress = await _depositAddressRepository.GetAddress(x => x.User.Id == userId && x.Asset.Id == 1);
             var forwaderContractAddress = await _depositAddressRepository.GetAddress(x => x.IsContractForwarderAddress);
             var factoryAddress = await _depositAddressRepository.GetAddress(x => x.IsContractFactoryAddress);
 
-            if (address == null || factoryAddress == null || forwaderContractAddress == null) return false;
+            if (depositAddress == null || factoryAddress == null || forwaderContractAddress == null) return false;
 
-            await _nethereumService.FlushEthereum(userId, address, forwaderContractAddress, factoryAddress);
+            await _nethereumService.FlushEthereum(userId, depositAddress, forwaderContractAddress, factoryAddress);
 
             return true;
         }

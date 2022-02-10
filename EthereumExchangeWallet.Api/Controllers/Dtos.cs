@@ -11,6 +11,6 @@ namespace EthereumExchangeWallet.Api.Controllers
         public record UserDepositAssetDto(int AssetId);
         public record CreateUpdateAssetDto([Required] string Name);
         public record CreateUpdateUserDto([Required] string Username);
-        public record DepositDto([Range(1, int.MaxValue)] decimal Amount, int AssetId);
+        public record DepositDto([Range(0.01, int.MaxValue)] decimal Amount, int AssetId);
     }
 }

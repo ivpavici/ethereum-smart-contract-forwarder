@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Logging;
 using Nethereum.ABI.Encoders;
 using Nethereum.Hex.HexConvertors.Extensions;
-using Nethereum.Signer;
 using Nethereum.Util;
 using Nethereum.WalletForwarder.Contracts.Forwarder;
 using Nethereum.WalletForwarder.Contracts.Forwarder.ContractDefinition;
@@ -21,22 +20,29 @@ namespace EthereumExchangeWallet.Api.Services
     {
         private readonly IConfiguration _config;
         private readonly ILogger<NethereumService> _logger;
-        public Web3 Web3 { get; }
+        private Web3 _web3;
+
+        public Web3 GetWeb3()
+        {
+            if (_web3 == null)
+            {
+                var privateKey = _config.GetValue<string>("EthPrivateKey");
+                var chainIdString = _config.GetValue<string>("ChainId");
+                var chainId = BigInteger.Parse(chainIdString);
+
+                var account = new Account(privateKey, chainId);
+                var ethNetwork = _config.GetValue<string>("EthNetwork");
+
+                _web3 = new Web3(account, ethNetwork);
+            }
+
+            return _web3;
+        }
 
         public NethereumService(IConfiguration config, ILogger<NethereumService> logger)
         {
             _config = config;
             _logger = logger;
-
-            var privateKey = _config.GetValue<string>("EthPrivateKey");
-            var chainIdString = _config.GetValue<string>("ChainId");
-            var chainId = BigInteger.Parse(chainIdString);
-
-            var account = new Account(privateKey, chainId);
-
-            var ethNetwork = _config.GetValue<string>("EthNetwork");
-
-            Web3 = new Web3(account, ethNetwork);
         }
 
         public async Task<string> DeployDefaultEthContractForwarderAddress()
@@ -47,9 +53,9 @@ namespace EthereumExchangeWallet.Api.Services
             string defaultForwaderContractAddress;
             try
             {
-                var defaultForwarderDeploymentReceipt = await ForwarderService.DeployContractAndWaitForReceiptAsync(Web3, new ForwarderDeployment());
+                var defaultForwarderDeploymentReceipt = await ForwarderService.DeployContractAndWaitForReceiptAsync(GetWeb3(), new ForwarderDeployment());
                 defaultForwaderContractAddress = defaultForwarderDeploymentReceipt.ContractAddress;
-                var defaultForwarderService = new ForwarderService(Web3, defaultForwaderContractAddress);
+                var defaultForwarderService = new ForwarderService(GetWeb3(), defaultForwaderContractAddress);
                 // initialiasing with the destination address
                 await defaultForwarderService.ChangeDestinationRequestAndWaitForReceiptAsync(destinationAddress);
             } 
@@ -64,7 +70,7 @@ namespace EthereumExchangeWallet.Api.Services
 
         public async Task<string> DeployDefaultEthContractFactory()
         {
-            var factoryDeploymentReceipt = await ForwarderFactoryService.DeployContractAndWaitForReceiptAsync(Web3, new ForwarderFactoryDeployment());
+            var factoryDeploymentReceipt = await ForwarderFactoryService.DeployContractAndWaitForReceiptAsync(GetWeb3(), new ForwarderFactoryDeployment());
 
             return factoryDeploymentReceipt.ContractAddress;
         }
@@ -74,45 +80,33 @@ namespace EthereumExchangeWallet.Api.Services
             var salt = BigInteger.Parse(userId.ToString());
             var saltHex = new IntTypeEncoder().Encode(salt).ToHex();
 
-            return ContractUtils.CalcualteCreate2AddressMinimalProxy(factoryAddress, saltHex, defaultForwaderContractAddress);
+            return CalculateCreate2AddressMinimalProxy(factoryAddress, saltHex, defaultForwaderContractAddress);
         }
 
-        public static int calls = 0;
-
-
-        public async Task Deposit(decimal amount, int userId, string addressToDeposit, string forwaderContractAddress, string factoryAddress)
+        public async Task Deposit(decimal amount, string addressToDeposit)
         {
-            // These first two lines of code are a simulation of deposit through, for example, Metamask
+            // a simulation of deposit with, for example, Metamask
 
             // Let's tranfer some ether, with some extra gas to allow forwarding if the smart contract is deployed (UX problem)
-            var estimatedGas = await Web3.Eth.GetEtherTransferService().EstimateGasAsync(addressToDeposit, amount);
-            var transferEtherReceipt = await Web3.Eth.GetEtherTransferService().TransferEtherAndWaitForReceiptAsync(addressToDeposit, amount, null, estimatedGas);
+            var estimatedGas = await GetWeb3().Eth.GetEtherTransferService().EstimateGasAsync(addressToDeposit, amount);
 
-            // This whole code below should be done inside some scheduler application that monitors the blockchain addresses for deposits.
-            // It will perform the flush to our hot wallet just for the first time. After that, each deoposit to users address is automatically 
-            // forwarded to the hot wallet through the smart contract.
-            calls++;
-
-            if (calls == 1)
-            {
-                await FlushEthereum(userId, addressToDeposit, forwaderContractAddress, factoryAddress);
-            }
+            var transferEtherReceipt = await GetWeb3().Eth.GetEtherTransferService().TransferEtherAndWaitForReceiptAsync(addressToDeposit, amount, null, estimatedGas);
         }
 
         public async Task FlushEthereum(int userId, string addressToDeposit, string forwaderContractAddress, string factoryAddress)
         {
             // Create the clone with the salt to match the address
-            var factoryService = new ForwarderFactoryService(Web3, factoryAddress);
+            var factoryService = new ForwarderFactoryService(GetWeb3(), factoryAddress);
+            
             var salt = BigInteger.Parse(userId.ToString());
-
             var txnReceipt = await factoryService.CloneForwarderRequestAndWaitForReceiptAsync(forwaderContractAddress, salt);
 
             // create a service for cloned forwarder
-            var clonedForwarderService = new ForwarderService(Web3, addressToDeposit);
+            var clonedForwarderService = new ForwarderService(GetWeb3(), addressToDeposit);
 
             // Using flush directly in the cloned contract
             // call flush to get all the ether transferred to destination address 
-            var flushReceipt = await clonedForwarderService.FlushRequestAndWaitForReceiptAsync();
+            var flushAllReceipt = await clonedForwarderService.FlushRequestAndWaitForReceiptAsync();
         }
 
         public async Task<decimal> GetBalance(string address, int asset)
@@ -123,7 +117,7 @@ namespace EthereumExchangeWallet.Api.Services
             {
                 try
                 {
-                    balance = await Web3.Eth.GetBalance.SendRequestAsync(address);
+                    balance = await GetWeb3().Eth.GetBalance.SendRequestAsync(address);
                 }
                 catch (Exception ex)
                 {
@@ -139,13 +133,47 @@ namespace EthereumExchangeWallet.Api.Services
                     Owner = "address", // TODO: ovde ide adresa deployanog smart contract forwardera ili nase hot wallet adrese
                 };
 
-                var balanceHandler = Web3.Eth.GetContractQueryHandler<BalanceOfFunction>();
+                var balanceHandler = GetWeb3().Eth.GetContractQueryHandler<BalanceOfFunction>();
 
                 // TODO: contractAddress je vjerojatno adresa tokena na blockchainu
                 balance = await balanceHandler.QueryAsync<BigInteger>("contractAddress", balanceOfFunctionMessage);
             }
 
             return Web3.Convert.FromWei(balance);
+        }
+
+        //this code is also from Nethereum Util, but it didn't work in latest version
+        private static string CalculateCreate2AddressMinimalProxy(string address, string saltHex, string deploymentAddress)
+        {
+            if (string.IsNullOrEmpty(deploymentAddress))
+            {
+                throw new System.ArgumentException($"'{nameof(deploymentAddress)}' cannot be null or empty.", nameof(deploymentAddress));
+            }
+
+            var bytecode = "3d602d80600a3d3981f3363d3d373d3d3d363d73" + deploymentAddress.RemoveHexPrefix() + "5af43d82803e903d91602b57fd5bf3";
+            return CalculateCreate2Address(address, saltHex, bytecode);
+        }
+
+        //this code is also from Nethereum Util, but it didn't work in latest version
+        private static string CalculateCreate2Address(string address, string saltHex, string byteCodeHex)
+        {
+            if (string.IsNullOrEmpty(address))
+            {
+                throw new System.ArgumentException($"'{nameof(address)}' cannot be null or empty.", nameof(address));
+            }
+
+            if (string.IsNullOrEmpty(saltHex))
+            {
+                throw new System.ArgumentException($"'{nameof(saltHex)}' cannot be null or empty.", nameof(saltHex));
+            }
+
+            if (saltHex.EnsureHexPrefix().Length != 66)
+            {
+                throw new System.ArgumentException($"'{nameof(saltHex)}' needs to be 32 bytes", nameof(saltHex));
+            }
+
+            var sha3 = new Sha3Keccack();
+            return sha3.CalculateHashFromHex("0xff", address, saltHex, sha3.CalculateHashFromHex(byteCodeHex)).Substring(24).ConvertToEthereumChecksumAddress();
         }
     }
 }
