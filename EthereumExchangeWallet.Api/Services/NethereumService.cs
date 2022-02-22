@@ -99,14 +99,33 @@ namespace EthereumExchangeWallet.Api.Services
             var factoryService = new ForwarderFactoryService(GetWeb3(), factoryAddress);
             
             var salt = BigInteger.Parse(userId.ToString());
-            var txnReceipt = await factoryService.CloneForwarderRequestAndWaitForReceiptAsync(forwaderContractAddress, salt);
+
+            try
+            {
+                var txnReceipt = await factoryService.CloneForwarderRequestAndWaitForReceiptAsync(forwaderContractAddress, salt);
+                _logger.LogInformation("Successfully cloned forwarder " + txnReceipt);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Cannot clone forwarder for " + addressToDeposit);
+                throw;
+            }
 
             // create a service for cloned forwarder
             var clonedForwarderService = new ForwarderService(GetWeb3(), addressToDeposit);
 
             // Using flush directly in the cloned contract
-            // call flush to get all the ether transferred to destination address 
-            var flushAllReceipt = await clonedForwarderService.FlushRequestAndWaitForReceiptAsync();
+            // call flush to get all the ether transferred to destination address
+            try
+            {
+                var flushAllReceipt = await clonedForwarderService.FlushRequestAndWaitForReceiptAsync();
+                _logger.LogInformation("Successfully flushed forwarder " + flushAllReceipt);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Cannot flush forwarder for " + addressToDeposit);
+                throw;
+            }
         }
 
         public async Task<decimal> GetBalance(string address, int asset)
