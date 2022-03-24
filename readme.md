@@ -18,5 +18,5 @@
 
 - To run: 
  	- docker compose up -d
- 	- run migrations
+ 	- run migrations (dotnet ef database update)
  	- in postman/insomnia reach the endpoint via (for exmample) http://localhost:5000/api/assets
