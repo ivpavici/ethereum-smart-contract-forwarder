@@ -95,22 +95,6 @@ namespace EthereumExchangeWallet.Api.Services
 
         public async Task FlushEthereum(int userId, string addressToDeposit, string forwaderContractAddress, string factoryAddress)
         {
-            // Create the clone with the salt to match the address
-            var factoryService = new ForwarderFactoryService(GetWeb3(), factoryAddress);
-            
-            var salt = BigInteger.Parse(userId.ToString());
-
-            try
-            {
-                var txnReceipt = await factoryService.CloneForwarderRequestAndWaitForReceiptAsync(forwaderContractAddress, salt);
-                _logger.LogInformation("Successfully cloned forwarder " + txnReceipt);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Cannot clone forwarder for " + addressToDeposit);
-                throw;
-            }
-
             // create a service for cloned forwarder
             var clonedForwarderService = new ForwarderService(GetWeb3(), addressToDeposit);
 
@@ -128,37 +112,65 @@ namespace EthereumExchangeWallet.Api.Services
             }
         }
 
+        public async Task CloneForwarder(int userId, string addressToDeposit, string forwaderContractAddress, string factoryAddress)
+        {
+            // Create the clone with the salt to match the address
+            var factoryService = new ForwarderFactoryService(GetWeb3(), factoryAddress);
+
+            var salt = BigInteger.Parse(userId.ToString());
+
+            try
+            {
+                var txnReceipt = await factoryService.CloneForwarderRequestAndWaitForReceiptAsync(forwaderContractAddress, salt);
+                _logger.LogInformation("Successfully cloned forwarder " + txnReceipt);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Cannot clone forwarder for " + addressToDeposit);
+                throw;
+            }
+        }
+
         public async Task<decimal> GetBalance(string address, int asset)
         {
             BigInteger balance;
 
             if (asset == 1) // Eth
             {
-                try
-                {
-                    balance = await GetWeb3().Eth.GetBalance.SendRequestAsync(address);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Cannot connect to Ethereum blockchain");
-                    throw;
-                }
+                balance = await GetEthBalance(address);
             }
             else
             {
-                // if asset is token
-                var balanceOfFunctionMessage = new BalanceOfFunction()
-                {
-                    Owner = "address", // TODO: ovde ide adresa deployanog smart contract forwardera ili nase hot wallet adrese
-                };
-
-                var balanceHandler = GetWeb3().Eth.GetContractQueryHandler<BalanceOfFunction>();
-
-                // TODO: contractAddress je vjerojatno adresa tokena na blockchainu
-                balance = await balanceHandler.QueryAsync<BigInteger>("contractAddress", balanceOfFunctionMessage);
+                balance = await GetTokenBalance(address);
             }
 
             return Web3.Convert.FromWei(balance);
+        }
+
+        private async Task<BigInteger> GetEthBalance(string address)
+        {
+            try
+            {
+                return await GetWeb3().Eth.GetBalance.SendRequestAsync(address);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Cannot connect to Ethereum blockchain");
+                throw;
+            }
+        }
+
+        private async Task<BigInteger> GetTokenBalance(string address)
+        {
+            var balanceOfFunctionMessage = new BalanceOfFunction()
+            {
+                Owner = address,
+            };
+
+            var balanceHandler = GetWeb3().Eth.GetContractQueryHandler<BalanceOfFunction>();
+
+            // TODO: contractAddress je adresa tokena na blockchainu
+            return await balanceHandler.QueryAsync<BigInteger>("contractAddress", balanceOfFunctionMessage);
         }
 
         //this code is also from Nethereum Util, but it didn't work in latest version

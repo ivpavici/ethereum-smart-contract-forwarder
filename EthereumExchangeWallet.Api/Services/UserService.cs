@@ -68,6 +68,7 @@ namespace EthereumExchangeWallet.Api.Services
 
             if (depositAddress == null || factoryAddress == null || forwaderContractAddress == null) return false;
 
+            await _nethereumService.CloneForwarder(userId, depositAddress, forwaderContractAddress, factoryAddress);
             await _nethereumService.FlushEthereum(userId, depositAddress, forwaderContractAddress, factoryAddress);
 
             return true;

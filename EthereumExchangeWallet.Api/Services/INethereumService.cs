@@ -11,5 +11,6 @@ namespace EthereumExchangeWallet.Api.Services
         Task Deposit(decimal amount, string addressToDeposit);
         Task FlushEthereum(int userId, string addressToDeposit, string forwaderContractAddress, string factoryAddress);
         Task<decimal> GetBalance(string address, int asset);
+        Task CloneForwarder(int userId, string addressToDeposit, string forwaderContractAddress, string factoryAddress);
     }
 }
